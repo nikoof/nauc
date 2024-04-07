@@ -36,25 +36,28 @@ pub fn ast<T: AsRef<str>>(source: T) -> Result<Vec<Token>, ParserError> {
             '-' => Ok(Token::Sub),
             '.' => Ok(Token::Write),
             ',' => Ok(Token::Read),
+
+            /* Explanation for the following two operations:
+            - To find the matching ] for a [, we keep track of a number that
+                 - is incremented when we hit [
+                 - is decremented when we hit ]
+                 - is unmodified otherwise
+            - Once this value reaches 0, we have hit the matching bracket.
+            - Its index is the index of the first 0 in the map. */
             '[' => {
-                // TODO: refactor this monstrosity
-                let mut jump = None;
-                let mut la = 1;
-                let mut ra = 0;
-                for (j, c) in chars[i + 1..].iter().enumerate() {
-                    if *c == '[' {
-                        la += 1;
-                    }
+                let mut count = 1;
+                let jump = chars[i + 1..]
+                    .iter()
+                    .map(move |ch| {
+                        count += match ch {
+                            '[' => 1,
+                            ']' => -1,
+                            _ => 0,
+                        };
 
-                    if *c == ']' {
-                        ra += 1;
-                    }
-
-                    if la == ra {
-                        jump = Some(j);
-                        break;
-                    }
-                }
+                        count
+                    })
+                    .position(|count| count == 0);
 
                 if let Some(jump) = jump {
                     Ok(Token::Break(i + 1 + jump))
@@ -63,24 +66,20 @@ pub fn ast<T: AsRef<str>>(source: T) -> Result<Vec<Token>, ParserError> {
                 }
             }
             ']' => {
-                // TODO: refactor this monstrosity
-                let mut jump = None;
-                let mut la = 0;
-                let mut ra = 1;
-                for (j, c) in chars[0..i].iter().rev().enumerate() {
-                    if *c == '[' {
-                        la += 1;
-                    }
+                let mut count = -1;
+                let jump = chars[..i]
+                    .iter()
+                    .rev()
+                    .map(move |ch| {
+                        count += match ch {
+                            '[' => 1,
+                            ']' => -1,
+                            _ => 0,
+                        };
 
-                    if *c == ']' {
-                        ra += 1;
-                    }
-
-                    if la == ra {
-                        jump = Some(j);
-                        break;
-                    }
-                }
+                        count
+                    })
+                    .position(|count| count == 0);
 
                 if let Some(jump) = jump {
                     Ok(Token::Loop(i - 1 - jump))
@@ -88,6 +87,7 @@ pub fn ast<T: AsRef<str>>(source: T) -> Result<Vec<Token>, ParserError> {
                     Err(ParserError::UnmatchedBracket(']'))
                 }
             }
+
             _ => Ok(Token::Comment),
         })
         .collect()
