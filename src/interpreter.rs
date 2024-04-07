@@ -1,21 +1,6 @@
 use crate::parser::Token;
+use anyhow::Result;
 use thiserror::Error;
-
-const MEM_SIZE: usize = 30_000;
-
-pub struct Interpreter {
-    program: Vec<Token>,
-    tape: [u8; MEM_SIZE],
-    index: usize,
-    pc: usize,
-    input_buffer: Vec<u8>,
-}
-
-// TODO: Replace this with builder pattern for Interpreter
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct InterpreterProps {
-    pub wrapping: bool,
-}
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum InterpreterError {
@@ -29,24 +14,77 @@ pub enum InterpreterError {
     OutOfBounds,
 }
 
-impl Interpreter {
-    pub fn new(program: Vec<Token>) -> Self {
-        Self {
-            program,
-            tape: [0u8; MEM_SIZE],
-            index: 0,
-            pc: 0,
-            input_buffer: Vec::new(),
+#[derive(Clone, Default)]
+pub struct NoProgram;
+#[derive(Clone, Default)]
+pub struct Program(Vec<Token>);
+
+#[derive(Clone, Default)]
+pub struct InterpreterBuilder<P> {
+    program: P,
+    wrapping: Option<bool>,
+    memory: Option<usize>,
+}
+
+impl InterpreterBuilder<NoProgram> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<P> InterpreterBuilder<P> {
+    pub fn program(self, program: Vec<Token>) -> InterpreterBuilder<Program> {
+        InterpreterBuilder {
+            program: Program(program),
+            wrapping: self.wrapping,
+            memory: self.memory,
         }
     }
 
-    pub fn run(mut self, props: InterpreterProps) -> Result<(), InterpreterError> {
+    pub fn wrapping(mut self, wrapping: bool) -> Self {
+        self.wrapping = Some(wrapping);
+        self
+    }
+
+    pub fn memory(mut self, memory: usize) -> Self {
+        self.memory = Some(memory);
+        self
+    }
+}
+
+impl InterpreterBuilder<Program> {
+    pub fn build(self) -> Interpreter {
+        let memory = self.memory.unwrap_or(30_000);
+        let wrapping = self.wrapping.unwrap_or(true);
+
+        Interpreter {
+            program: self.program.0,
+            tape: vec![0u8; memory],
+            input_buffer: vec![],
+            pc: 0,
+            index: 0,
+            wrapping,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Interpreter {
+    program: Vec<Token>,
+    tape: Vec<u8>,
+    index: usize,
+    pc: usize,
+    input_buffer: Vec<u8>,
+    wrapping: bool,
+}
+
+impl Interpreter {
+    pub fn run(mut self) -> Result<(), InterpreterError> {
         while self.pc < self.program.len() {
             match self.program[self.pc] {
                 Token::Right => {
-                    self.index = self
-                        .index
-                        .checked_add(1)
+                    self.index = (self.index + 1 < self.tape.capacity())
+                        .then(|| self.index + 1)
                         .ok_or(InterpreterError::OutOfBounds)?
                 }
                 Token::Left => {
@@ -56,7 +94,7 @@ impl Interpreter {
                         .ok_or(InterpreterError::OutOfBounds)?
                 }
                 Token::Add => {
-                    if props.wrapping {
+                    if self.wrapping {
                         self.tape[self.index] = self.tape[self.index].wrapping_add(1)
                     } else {
                         self.tape[self.index] = self.tape[self.index]
@@ -65,7 +103,7 @@ impl Interpreter {
                     }
                 }
                 Token::Sub => {
-                    if props.wrapping {
+                    if self.wrapping {
                         self.tape[self.index] = self.tape[self.index].wrapping_sub(1)
                     } else {
                         self.tape[self.index] = self.tape[self.index]
