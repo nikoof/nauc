@@ -15,9 +15,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// run in interpreter mode
+    /// Run in interpreter mode.
     Interpret {
-        /// file to feed to interpreter
+        /// File to feed to interpreter
         file: PathBuf,
     },
 }
