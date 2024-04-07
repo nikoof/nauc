@@ -18,7 +18,7 @@
           strictDeps = true;
         };
         cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
-          pname = "naucit-deps";
+          pname = "nauc-deps";
           buildInputs = with pkgs; [];
           nativeBuildInputs = with pkgs; [];
         });
