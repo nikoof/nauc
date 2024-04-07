@@ -26,8 +26,8 @@ impl Interpreter {
             match self.program[self.pc] {
                 Token::Right => self.index += 1,
                 Token::Left => self.index -= 1,
-                Token::Add => self.tape[self.index] += 1,
-                Token::Sub => self.tape[self.index] -= 1,
+                Token::Add => self.tape[self.index] = self.tape[self.index].wrapping_add(1),
+                Token::Sub => self.tape[self.index] = self.tape[self.index].wrapping_sub(1),
                 Token::Read => {
                     if let Some(value) = self.input_buffer.pop() {
                         self.tape[self.index] = value;
