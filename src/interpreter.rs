@@ -7,6 +7,7 @@ pub struct Interpreter {
     tape: [u8; MEM_SIZE],
     index: usize,
     pc: usize,
+    input_buffer: Vec<u8>,
 }
 
 impl Interpreter {
@@ -16,6 +17,7 @@ impl Interpreter {
             tape: [0u8; MEM_SIZE],
             index: 0,
             pc: 0,
+            input_buffer: Vec::new(),
         }
     }
 
@@ -26,8 +28,19 @@ impl Interpreter {
                 Token::Left => self.index -= 1,
                 Token::Add => self.tape[self.index] += 1,
                 Token::Sub => self.tape[self.index] -= 1,
-                Token::Read => (),
-                Token::Write => print!("{}", self.tape[self.index] as char),
+                Token::Read => {
+                    if let Some(value) = self.input_buffer.pop() {
+                        self.tape[self.index] = value;
+                    } else {
+                        let mut buf = String::new();
+                        std::io::stdin().read_line(&mut buf).unwrap();
+                        self.input_buffer = buf.into_bytes().into_iter().rev().collect();
+                        self.tape[self.index] = self.input_buffer.pop().unwrap();
+                    }
+                }
+                Token::Write => {
+                    print!("{}", self.tape[self.index] as char)
+                }
                 Token::Loop(jump) => {
                     if self.tape[self.index] != 0 {
                         self.pc = jump
