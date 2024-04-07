@@ -79,6 +79,7 @@ mod tests {
     use super::*;
     use rstest::*;
 
+    #[allow(unused)]
     type T = Token;
 
     #[rstest]
