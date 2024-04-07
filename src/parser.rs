@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Token {
     Right,
@@ -11,7 +13,13 @@ pub enum Token {
     Comment,
 }
 
-pub fn ast<T: AsRef<str>>(source: T) -> Vec<Token> {
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum ParserError {
+    #[error("Unmatched '{0}'")]
+    UnmatchedBracket(char),
+}
+
+pub fn ast<T: AsRef<str>>(source: T) -> Result<Vec<Token>, ParserError> {
     let chars: Vec<char> = source
         .as_ref()
         .chars()
@@ -22,15 +30,15 @@ pub fn ast<T: AsRef<str>>(source: T) -> Vec<Token> {
         .iter()
         .enumerate()
         .map(|(i, ch)| match ch {
-            '>' => Token::Right,
-            '<' => Token::Left,
-            '+' => Token::Add,
-            '-' => Token::Sub,
-            '.' => Token::Write,
-            ',' => Token::Read,
+            '>' => Ok(Token::Right),
+            '<' => Ok(Token::Left),
+            '+' => Ok(Token::Add),
+            '-' => Ok(Token::Sub),
+            '.' => Ok(Token::Write),
+            ',' => Ok(Token::Read),
             '[' => {
                 // TODO: refactor this monstrosity
-                let mut jump = 0;
+                let mut jump = None;
                 let mut la = 1;
                 let mut ra = 0;
                 for (j, c) in chars[i + 1..].iter().enumerate() {
@@ -43,15 +51,20 @@ pub fn ast<T: AsRef<str>>(source: T) -> Vec<Token> {
                     }
 
                     if la == ra {
-                        jump = j;
+                        jump = Some(j);
                         break;
                     }
                 }
-                Token::Break(i + 1 + jump)
+
+                if let Some(jump) = jump {
+                    Ok(Token::Break(i + 1 + jump))
+                } else {
+                    Err(ParserError::UnmatchedBracket('['))
+                }
             }
             ']' => {
                 // TODO: refactor this monstrosity
-                let mut jump = 0;
+                let mut jump = None;
                 let mut la = 0;
                 let mut ra = 1;
                 for (j, c) in chars[0..i].iter().rev().enumerate() {
@@ -64,13 +77,18 @@ pub fn ast<T: AsRef<str>>(source: T) -> Vec<Token> {
                     }
 
                     if la == ra {
-                        jump = j;
+                        jump = Some(j);
                         break;
                     }
                 }
-                Token::Loop(i - 1 - jump)
+
+                if let Some(jump) = jump {
+                    Ok(Token::Loop(i - 1 - jump))
+                } else {
+                    Err(ParserError::UnmatchedBracket(']'))
+                }
             }
-            _ => Token::Comment,
+            _ => Ok(Token::Comment),
         })
         .collect()
 }
@@ -83,15 +101,17 @@ mod tests {
     type T = Token;
 
     #[rstest]
-    #[case("", vec![])]
-    #[case(">", vec![T::Right])]
-    #[case("[>]", vec![T::Break(2), T::Right, T::Loop(0)])]
-    #[case(">>>>", vec![T::Right, T::Right, T::Right, T::Right])]
-    #[case(">+>+", vec![T::Right, T::Add, T::Right, T::Add])]
-    #[case("[[.-]]", vec![T::Break(5), T::Break(4), T::Write, T::Sub, T::Loop(1), T::Loop(0)])]
-    #[case("><+-.,[]", vec![T::Right, T::Left, T::Add, T::Sub, T::Write, T::Read, T::Break(7), T::Loop(6)])]
-    #[case("++++[>+.<-]", vec![T::Add, T::Add, T::Add, T::Add, T::Break(10), T::Right, T::Add, T::Write, T::Left, T::Sub, T::Loop(4)])]
-    fn test_parser(#[case] source: &str, #[case] expected: Vec<T>) {
+    #[case("", Ok(vec![]))]
+    #[case(">", Ok(vec![T::Right]))]
+    #[case("[>]", Ok(vec![T::Break(2), T::Right, T::Loop(0)]))]
+    #[case(">>>>", Ok(vec![T::Right, T::Right, T::Right, T::Right]))]
+    #[case(">+>+", Ok(vec![T::Right, T::Add, T::Right, T::Add]))]
+    #[case("[[.-]]", Ok(vec![T::Break(5), T::Break(4), T::Write, T::Sub, T::Loop(1), T::Loop(0)]))]
+    #[case("><+-.,[]", Ok(vec![T::Right, T::Left, T::Add, T::Sub, T::Write, T::Read, T::Break(7), T::Loop(6)]))]
+    #[case("++++[>+.<-]", Ok(vec![T::Add, T::Add, T::Add, T::Add, T::Break(10), T::Right, T::Add, T::Write, T::Left, T::Sub, T::Loop(4)]))]
+    #[case("[[+++>++]", Err(ParserError::UnmatchedBracket('[')))]
+    #[case("[+>++]]]", Err(ParserError::UnmatchedBracket(']')))]
+    fn test_parser(#[case] source: &str, #[case] expected: Result<Vec<T>, ParserError>) {
         assert_eq!(ast(source), expected);
     }
 }
