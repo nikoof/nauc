@@ -1,35 +1,15 @@
-use anyhow::Result;
-use clap::{Parser, Subcommand};
+use anyhow::{anyhow, Result};
+use clap::Parser;
+
+use cli::{Cli, Commands};
+use compiler::{codegen, compile};
 use interpreter::InterpreterBuilder;
 use parser::ast;
-use std::{fs::File, io::Read, path::PathBuf};
 
+mod cli;
+mod compiler;
 mod interpreter;
 mod parser;
-
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Run in interpreter mode.
-    Interpret {
-        /// File to feed to interpreter
-        file: PathBuf,
-
-        /// Disable the wrapping of cell values. If on, IntegerOverflow errors are possible.
-        #[arg(short = 'w', long)]
-        no_wrap: bool,
-
-        /// Number of cells in memory
-        #[arg(short, long, default_value = "30000")]
-        memory: usize,
-    },
-}
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -40,9 +20,7 @@ fn main() -> Result<()> {
             no_wrap,
             memory,
         }) => {
-            let mut file = File::open(file.as_path()).unwrap();
-            let mut code = String::new();
-            file.read_to_string(&mut code).ok();
+            let code = std::fs::read_to_string(file.as_path())?;
             let ast = ast(&code)?;
 
             let interpreter = InterpreterBuilder::new()
@@ -52,6 +30,22 @@ fn main() -> Result<()> {
                 .build();
 
             interpreter.run()?;
+        }
+        Some(Commands::Compile {
+            file,
+            memory,
+            output,
+            keep_artifacts,
+        }) => {
+            let code = std::fs::read_to_string(file.as_path())?;
+            let ast = ast(&code)?;
+
+            let output = output.unwrap_or(
+                file.file_name()
+                    .ok_or(anyhow!("Output file should be a file"))?
+                    .into(),
+            );
+            compile(&codegen(&ast, memory), &output, keep_artifacts)?;
         }
         None => {}
     }

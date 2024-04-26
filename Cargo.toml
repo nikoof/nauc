@@ -1,10 +1,11 @@
 [package]
 name = "nauc"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0.81"
 clap = { version = "4.5.4", features = ["derive"] }
+indoc = "2.0.5"
 rstest = "0.18.2"
 thiserror = "1.0.58"

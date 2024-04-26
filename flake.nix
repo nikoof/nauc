@@ -42,6 +42,7 @@
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
           packages = with pkgs; [
+            gdb
             rust-analyzer
           ];
         };
