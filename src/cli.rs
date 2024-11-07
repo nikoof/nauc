@@ -40,5 +40,9 @@ pub enum Commands {
         /// Keep build artifacts.
         #[arg(short, long, default_value = "false")]
         keep_artifacts: bool,
+
+        /// Include debug symbols (implies --keep-artifacts)
+        #[arg(short = 'g', long, default_value = "false")]
+        debug: bool,
     },
 }

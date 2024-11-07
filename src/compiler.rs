@@ -114,7 +114,12 @@ pub fn codegen(program: &[Token], memory: usize) -> String {
     asm
 }
 
-pub fn compile(asm_source: &String, outfile: &Path, keep_artifacts: bool) -> Result<()> {
+pub fn compile(
+    asm_source: &String,
+    outfile: &Path,
+    keep_artifacts: bool,
+    debug: bool,
+) -> Result<()> {
     let asm = outfile.with_extension("asm");
     let obj = outfile.with_extension("o");
     let bin = outfile
@@ -124,12 +129,17 @@ pub fn compile(asm_source: &String, outfile: &Path, keep_artifacts: bool) -> Res
     File::create(&asm)?.write_all(asm_source.as_bytes())?;
 
     let nasm = Command::new("nasm")
-        .arg("-f")
-        .arg("elf64")
+        .args(["-f", "elf64"])
+        .args(if debug {
+            vec!["-g", "-F", "dwarf"]
+        } else {
+            vec![]
+        })
         .arg("-o")
         .arg(&obj)
         .arg(&asm)
         .output()?;
+
     eprintln!("{}", String::from_utf8_lossy(&nasm.stderr));
 
     let link = Command::new("ld").arg("-o").arg(bin).arg(&obj).output()?;

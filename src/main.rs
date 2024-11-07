@@ -36,6 +36,7 @@ fn main() -> Result<()> {
             memory,
             output,
             keep_artifacts,
+            debug,
         }) => {
             let code = std::fs::read_to_string(file.as_path())?;
             let ast = ast(code)?;
@@ -45,7 +46,12 @@ fn main() -> Result<()> {
                     .ok_or(anyhow!("Output file should be a file"))?
                     .into(),
             );
-            compile(&codegen(&ast, memory), &output, keep_artifacts)?;
+            compile(
+                &codegen(&ast, memory),
+                &output,
+                debug || keep_artifacts,
+                debug,
+            )?;
         }
         None => {}
     }
