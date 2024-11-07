@@ -21,7 +21,7 @@ fn main() -> Result<()> {
             memory,
         }) => {
             let code = std::fs::read_to_string(file.as_path())?;
-            let ast = ast(&code)?;
+            let ast = ast(code)?;
 
             let interpreter = InterpreterBuilder::new()
                 .program(ast)
@@ -38,7 +38,7 @@ fn main() -> Result<()> {
             keep_artifacts,
         }) => {
             let code = std::fs::read_to_string(file.as_path())?;
-            let ast = ast(&code)?;
+            let ast = ast(code)?;
 
             let output = output.unwrap_or(
                 file.file_name()

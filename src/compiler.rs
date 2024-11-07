@@ -121,7 +121,7 @@ pub fn compile(asm_source: &String, outfile: &Path, keep_artifacts: bool) -> Res
         .file_stem()
         .ok_or(anyhow!("Output file is a directory"))?;
 
-    File::create(&asm)?.write(asm_source.as_bytes())?;
+    File::create(&asm)?.write_all(asm_source.as_bytes())?;
 
     let nasm = Command::new("nasm")
         .arg("-f")
@@ -132,7 +132,7 @@ pub fn compile(asm_source: &String, outfile: &Path, keep_artifacts: bool) -> Res
         .output()?;
     eprintln!("{}", String::from_utf8_lossy(&nasm.stderr));
 
-    let link = Command::new("ld").arg("-o").arg(&bin).arg(&obj).output()?;
+    let link = Command::new("ld").arg("-o").arg(bin).arg(&obj).output()?;
     eprintln!("{}", String::from_utf8_lossy(&link.stderr));
 
     if !keep_artifacts {
