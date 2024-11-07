@@ -51,21 +51,21 @@ pub fn codegen(program: &[Token], memory: usize) -> String {
     let mut loops: Vec<usize> = vec![];
     for t in program {
         asm.push_str(&match t {
-            Token::Right => indoc! {"
-                add rbx, 1
-            "}
+            Token::Right(count) => formatdoc! {"
+                add rbx, {}
+            ", count}
             .to_string(),
-            Token::Left => indoc! {"
-                sub rbx, 1
-            "}
+            Token::Left(count) => formatdoc! {"
+                sub rbx, {}
+            ", count}
             .to_string(),
-            Token::Add => indoc! {"
-                add byte [tape + rbx], 1
-            "}
+            Token::Add(count) => formatdoc! {"
+                add byte [tape + rbx], {}
+            ", count}
             .to_string(),
-            Token::Sub => indoc! {"
-                sub byte [tape + rbx], 1
-            "}
+            Token::Sub(count) => formatdoc! {"
+                sub byte [tape + rbx], {}
+            ", count}
             .to_string(),
             Token::Read => indoc! {"
                 call read_line

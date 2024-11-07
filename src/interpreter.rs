@@ -82,32 +82,32 @@ impl Interpreter {
     pub fn run(mut self) -> Result<(), InterpreterError> {
         while self.pc < self.program.len() {
             match self.program[self.pc] {
-                Token::Right => {
-                    self.index = (self.index + 1 < self.tape.capacity())
-                        .then(|| self.index + 1)
+                Token::Right(count) => {
+                    self.index = (self.index + count < self.tape.capacity())
+                        .then(|| self.index + count)
                         .ok_or(InterpreterError::OutOfBounds)?
                 }
-                Token::Left => {
+                Token::Left(count) => {
                     self.index = self
                         .index
-                        .checked_sub(1)
+                        .checked_sub(count)
                         .ok_or(InterpreterError::OutOfBounds)?
                 }
-                Token::Add => {
+                Token::Add(count) => {
                     if self.wrapping {
-                        self.tape[self.index] = self.tape[self.index].wrapping_add(1)
+                        self.tape[self.index] = self.tape[self.index].wrapping_add(count);
                     } else {
                         self.tape[self.index] = self.tape[self.index]
-                            .checked_add(1)
+                            .checked_add(count)
                             .ok_or(InterpreterError::IntegerOverflow(self.pc))?
                     }
                 }
-                Token::Sub => {
+                Token::Sub(count) => {
                     if self.wrapping {
-                        self.tape[self.index] = self.tape[self.index].wrapping_sub(1)
+                        self.tape[self.index] = self.tape[self.index].wrapping_sub(count);
                     } else {
                         self.tape[self.index] = self.tape[self.index]
-                            .checked_sub(1)
+                            .checked_sub(count)
                             .ok_or(InterpreterError::IntegerUnderflow(self.pc))?
                     }
                 }
