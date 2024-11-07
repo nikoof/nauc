@@ -10,7 +10,7 @@ Other stuff which will be configurable:
 - cell signed-ness
 
 > [!CAUTION]
-> The compiler is far from perfect and currently a work-in-progress. It does no optimization whatsoever and is also probably extremely buggy.
+> The compiler is far from perfect and currently a work-in-progress. It does _very_ basic optimizations and is also probably extremely buggy.
 
 
 > [!NOTE]
