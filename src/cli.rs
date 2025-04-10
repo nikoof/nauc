@@ -5,11 +5,11 @@ use std::path::PathBuf;
 #[command(version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Option<Commands>,
+    pub command: Option<Command>,
 }
 
 #[derive(Subcommand)]
-pub enum Commands {
+pub enum Command {
     /// Run in interpreter mode.
     Interpret {
         /// File to feed to interpreter.

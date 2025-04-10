@@ -120,7 +120,7 @@ pub fn compile(
     keep_artifacts: bool,
     debug: bool,
 ) -> Result<()> {
-    let asm = outfile.with_extension("asm");
+    let asm = outfile.with_extension("s");
     let obj = outfile.with_extension("o");
     let bin = outfile
         .file_stem()

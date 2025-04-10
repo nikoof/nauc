@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
 
-use cli::{Cli, Commands};
+use cli::{Cli, Command};
 use compiler::{codegen, compile};
 use interpreter::InterpreterBuilder;
 use parser::ast;
@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Some(Commands::Interpret {
+        Some(Command::Interpret {
             file,
             no_wrap,
             memory,
@@ -31,7 +31,7 @@ fn main() -> Result<()> {
 
             interpreter.run()?;
         }
-        Some(Commands::Compile {
+        Some(Command::Compile {
             file,
             memory,
             output,
