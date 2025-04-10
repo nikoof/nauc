@@ -1,7 +1,5 @@
 use crate::parser::Token;
-use anyhow::{anyhow, Result};
 use indoc::{formatdoc, indoc};
-use std::{fs::File, io::Write, path::Path, process::Command};
 
 /* TODO: Refactor this.
  * The way these instructions are implemented is obviously unoptimized
@@ -112,43 +110,4 @@ pub fn codegen(program: &[Token], memory: usize) -> String {
     "});
 
     asm
-}
-
-pub fn compile(
-    asm_source: &String,
-    outfile: &Path,
-    keep_artifacts: bool,
-    debug: bool,
-) -> Result<()> {
-    let asm = outfile.with_extension("s");
-    let obj = outfile.with_extension("o");
-    let bin = outfile
-        .file_stem()
-        .ok_or(anyhow!("Output file is a directory"))?;
-
-    File::create(&asm)?.write_all(asm_source.as_bytes())?;
-
-    let nasm = Command::new("nasm")
-        .args(["-f", "elf64"])
-        .args(if debug {
-            vec!["-g", "-F", "dwarf"]
-        } else {
-            vec![]
-        })
-        .arg("-o")
-        .arg(&obj)
-        .arg(&asm)
-        .output()?;
-
-    eprintln!("{}", String::from_utf8_lossy(&nasm.stderr));
-
-    let link = Command::new("ld").arg("-o").arg(bin).arg(&obj).output()?;
-    eprintln!("{}", String::from_utf8_lossy(&link.stderr));
-
-    if !keep_artifacts {
-        std::fs::remove_file(&asm)?;
-        std::fs::remove_file(&obj)?;
-    }
-
-    Ok(())
 }

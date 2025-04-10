@@ -2,7 +2,10 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 
 use cli::{Cli, Command};
-use compiler::{codegen, compile};
+use compiler::{
+    arch::{self, x86_64_linux::codegen, Architecture},
+    compile,
+};
 use interpreter::InterpreterBuilder;
 use parser::ast;
 
@@ -37,6 +40,7 @@ fn main() -> Result<()> {
             output,
             keep_artifacts,
             debug,
+            architecture,
         }) => {
             let code = std::fs::read_to_string(file.as_path())?;
             let ast = ast(code)?;
@@ -46,12 +50,13 @@ fn main() -> Result<()> {
                     .ok_or(anyhow!("Output file should be a file"))?
                     .into(),
             );
-            compile(
-                &codegen(&ast, memory),
-                &output,
-                debug || keep_artifacts,
-                debug,
-            )?;
+
+            let asm = match architecture {
+                Architecture::Aarch64Linux => arch::aarch64_linux::codegen,
+                Architecture::X86_64Linux => arch::x86_64_linux::codegen,
+            }(&ast, memory);
+
+            compile(&asm, &output, debug || keep_artifacts, debug)?;
         }
         None => {}
     }

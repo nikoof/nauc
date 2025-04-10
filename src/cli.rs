@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+use crate::compiler::arch::Architecture;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
@@ -28,6 +30,10 @@ pub enum Command {
     Compile {
         /// Source file.
         file: PathBuf,
+
+        /// Target architecture
+        #[arg(short, long = "arch", default_value = "x86_64-linux")]
+        architecture: Architecture,
 
         /// Number of cells in memory.
         #[arg(short, long, default_value = "30000")]
