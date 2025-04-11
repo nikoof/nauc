@@ -3,7 +3,7 @@ use clap::Parser;
 
 use cli::{Cli, Command};
 use compiler::{
-    arch::{self, x86_64_linux::codegen, Architecture},
+    arch::{self, x86_64_linux::codegen, Target},
     compile,
 };
 use interpreter::InterpreterBuilder;
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
             output,
             keep_artifacts,
             debug,
-            architecture,
+            target,
         }) => {
             let code = std::fs::read_to_string(file.as_path())?;
             let ast = ast(code)?;
@@ -51,9 +51,9 @@ fn main() -> Result<()> {
                     .into(),
             );
 
-            let asm = match architecture {
-                Architecture::Aarch64Linux => arch::aarch64_linux::codegen,
-                Architecture::X86_64Linux => arch::x86_64_linux::codegen,
+            let asm = match target {
+                Target::Aarch32Linux => arch::aarch32_linux::codegen,
+                Target::X86_64Linux => arch::x86_64_linux::codegen,
             }(&ast, memory);
 
             compile(&asm, &output, debug || keep_artifacts, debug)?;

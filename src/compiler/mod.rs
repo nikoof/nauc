@@ -17,13 +17,20 @@ pub fn compile(
 
     File::create(&asm)?.write_all(asm_source.as_bytes())?;
 
-    let nasm = Command::new("nasm")
-        .args(["-f", "elf64"])
-        .args(if debug {
-            vec!["-g", "-F", "dwarf"]
-        } else {
-            vec![]
-        })
+    // let nasm = Command::new("nasm")
+    //     .args(["-f", "elf64"])
+    //     .args(if debug {
+    //         vec!["-g", "-F", "dwarf"]
+    //     } else {
+    //         vec![]
+    //     })
+    //     .arg("-o")
+    //     .arg(&obj)
+    //     .arg(&asm)
+    //     .output()?;
+
+    let nasm = Command::new("arm-none-eabi-as")
+        .args(if debug { vec!["-g"] } else { vec![] })
         .arg("-o")
         .arg(&obj)
         .arg(&asm)
@@ -31,7 +38,11 @@ pub fn compile(
 
     eprintln!("{}", String::from_utf8_lossy(&nasm.stderr));
 
-    let link = Command::new("ld").arg("-o").arg(bin).arg(&obj).output()?;
+    let link = Command::new("arm-none-eabi-ld")
+        .arg("-o")
+        .arg(bin)
+        .arg(&obj)
+        .output()?;
     eprintln!("{}", String::from_utf8_lossy(&link.stderr));
 
     if !keep_artifacts {

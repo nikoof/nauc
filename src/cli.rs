@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-use crate::compiler::arch::Architecture;
+use crate::compiler::arch::Target;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -32,8 +32,8 @@ pub enum Command {
         file: PathBuf,
 
         /// Target architecture
-        #[arg(short, long = "arch", default_value = "x86_64-linux")]
-        architecture: Architecture,
+        #[arg(short, long = "target", default_value = "x86_64-linux")]
+        target: Target,
 
         /// Number of cells in memory.
         #[arg(short, long, default_value = "30000")]

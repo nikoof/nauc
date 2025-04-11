@@ -45,9 +45,7 @@ pub fn codegen(program: &[Token], memory: usize) -> String {
     "}
     .to_string();
 
-    let mut loop_index = 0;
-    let mut loops: Vec<usize> = vec![];
-    for t in program {
+    for (i, t) in program.iter().enumerate() {
         asm.push_str(&match t {
             Token::Right(count) => formatdoc! {"
                 add rbx, {}
@@ -71,7 +69,8 @@ pub fn codegen(program: &[Token], memory: usize) -> String {
                 mov dl, byte [input_buf + rcx]
                 mov byte [tape + rbx], dl
                 add qword [input_index], 1
-            "}.to_string(),
+            "}
+            .to_string(),
             Token::Write => indoc! {"
                 mov rax, 1
                 mov rdi, 1
@@ -81,24 +80,18 @@ pub fn codegen(program: &[Token], memory: usize) -> String {
                 syscall
             "}
             .to_string(),
-            Token::Loop(_) => {
-                let loop_index = loops.pop()
-                    .expect("Unmatched loops should not get past parser. If you see this, then I messed up the parser.");
-
-                formatdoc! {"
-                    movzx rcx, byte [tape + rbx]
-                    cmp rcx, 0
-                    jne l{loop_index}
-                "}
-            }
-            Token::Break(_) => {
-                loops.push(loop_index);
-                loop_index += 1;
-                formatdoc! {"
-                    l{}:
-                ", loop_index - 1}
-            }
-            .to_string(),
+            Token::Loop(j) => formatdoc! {"
+                movzx rcx, byte [tape + rbx]
+                cmp rcx, 0
+                jne L{j}
+            L{i}:
+            "},
+            Token::Break(j) => formatdoc! {"
+            L{i}:
+                movzx rcx, byte [tape + rbx]
+                cmp rcx, 0
+                jne L{j}
+            "},
             Token::Comment => "".to_string(),
         });
     }
