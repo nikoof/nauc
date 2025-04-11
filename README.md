@@ -10,12 +10,12 @@ Other stuff which will be configurable:
 - cell signed-ness
 
 > [!CAUTION]
-> The compiler is far from perfect and currently a work-in-progress. It does _very_ basic optimizations and is also probably extremely buggy.
+> The compiler is currently a work-in-progress. It does no meaningful optimizations. Please report any bugs.
 
 
 > [!NOTE]
-> - The compiler only supports x86_64 Linux.
-> - It also uses the [nasm](https://nasm.us/) assembler as a runtime dependency, so make sure you have it installed.
+> - The compiler currently supports x86_64-linux and aarch32-linux.
+> - On x86_64, it uses the [nasm](https://nasm.us/) assembler as a runtime dependency. On aarch32, it uses the GNU Assembler. Make sure you have your platform's assembler installed.
 
 # Usage
 ```
