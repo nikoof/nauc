@@ -24,7 +24,7 @@ pub fn compile(
     // TODO: find a way to use the platform's native assembler
 
     let assembler = match target {
-        Target::Aarch32Linux => Command::new("arm-none-gnuabi-as")
+        Target::Aarch32Linux => Command::new("arm-linux-gnueabi-as")
             .args(if debug { vec!["-g"] } else { vec![] })
             .arg("-o")
             .arg(&obj)
@@ -41,7 +41,17 @@ pub fn compile(
             .arg(&obj)
             .arg(&asm)
             .output(),
-    }?;
+    }
+    .map_err(|err| {
+        anyhow!(
+            "Could not find compiler: {}: {}",
+            match target {
+                Target::Aarch32Linux => "arm-linux-gnueabi-as",
+                Target::X86_64Linux => "nasm",
+            },
+            err
+        )
+    })?;
 
     if !assembler.status.success() {
         if !keep_artifacts {
@@ -60,13 +70,23 @@ pub fn compile(
     }
 
     let linker = match target {
-        Target::Aarch32Linux => Command::new("arm-none-gnuabi-ld")
+        Target::Aarch32Linux => Command::new("arm-linux-gnueabi-ld")
             .arg("-o")
             .arg(bin)
             .arg(&obj)
             .output(),
         Target::X86_64Linux => Command::new("ld").arg("-o").arg(bin).arg(&obj).output(),
-    }?;
+    }
+    .map_err(|err| {
+        anyhow!(
+            "Could not find linker: {}: {}",
+            match target {
+                Target::Aarch32Linux => "arm-linux-gnueabi-ld",
+                Target::X86_64Linux => "ld",
+            },
+            err
+        )
+    })?;
 
     if !linker.status.success() {
         if !keep_artifacts {
