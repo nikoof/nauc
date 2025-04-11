@@ -56,7 +56,7 @@ fn main() -> Result<()> {
                 Target::X86_64Linux => arch::x86_64_linux::codegen,
             }(&ast, memory);
 
-            compile(&asm, &output, debug || keep_artifacts, debug)?;
+            compile(&asm, &output, debug || keep_artifacts, debug, target)?;
         }
         None => {}
     }
