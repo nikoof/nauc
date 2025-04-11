@@ -3,7 +3,7 @@ use clap::Parser;
 
 use cli::{Cli, Command};
 use compiler::{
-    arch::{self, x86_64_linux::codegen, Target},
+    arch::{self, Target},
     compile,
 };
 use interpreter::InterpreterBuilder;

@@ -1,105 +1,91 @@
 use crate::parser::Token;
 use indoc::{formatdoc, indoc};
 
-/* TODO: Refactor this.
- * The way these instructions are implemented is obviously unoptimized
- * and far from ideal. */
 pub fn codegen(program: &[Token], memory: usize) -> String {
     let mut asm: String = formatdoc! {"
         section .bss
-          tape        resb {memory}
-          input_buf   resb 10000
-          input_index resq 1
-          input_len   resq 1
+            tape        resb {memory}
 
         section .text
         global _start
 
-        read_line:
-          mov rax, qword [input_index]
-          cmp rax, qword [input_len]
-          jne end
-
-          mov qword [input_index], 0
-          mov qword [input_len], 0
-
-          read_loop:
-            mov rax, 0
-            mov rdi, 0,
-            mov rcx, qword [input_len]
-            lea rsi, byte [input_buf + rcx]
-            mov rdx, 1
+        write:
+            mov        rdi, 1
+            mov        rsi, tape
+            add        rsi, r12
+            mov        rdx, 1
+            mov        rax, 1
             syscall
+            ret
 
-            mov rcx, qword [input_len]
-            add qword [input_len], 1
-            cmp byte [input_buf + rcx], 10
-            jne read_loop
-
-          end:
-          ret
+        read:
+            mov        rdi, 0
+            mov        rsi, tape
+            add        rsi, r12
+            mov        rdx, 1
+            mov        rax, 0
+            syscall
+            ret
 
         _start:
-          mov qword [input_index], 0
-          mov qword [input_len], 0
+            mov        r12, 0
     "}
     .to_string();
 
     for (i, t) in program.iter().enumerate() {
         asm.push_str(&match t {
-            Token::Right(count) => formatdoc! {"
-                add rbx, {}
-            ", count}
+            Token::Right(operand) => formatdoc! {"
+            ;
+                add        r12, {operand}
+            "}
             .to_string(),
-            Token::Left(count) => formatdoc! {"
-                sub rbx, {}
-            ", count}
+            Token::Left(operand) => formatdoc! {"
+            ;
+                sub        r12, {operand}
+            "}
             .to_string(),
-            Token::Add(count) => formatdoc! {"
-                add byte [tape + rbx], {}
-            ", count}
+            Token::Add(operand) => formatdoc! {"
+            ;
+                add        byte [tape + r12], {operand}
+            "}
             .to_string(),
-            Token::Sub(count) => formatdoc! {"
-                sub byte [tape + rbx], {}
-            ", count}
+            Token::Sub(operand) => formatdoc! {"
+            ;
+                sub        byte [tape + r12], {operand}
+            "}
             .to_string(),
             Token::Read => indoc! {"
-                call read_line
-                mov rcx, qword [input_index]
-                mov dl, byte [input_buf + rcx]
-                mov byte [tape + rbx], dl
-                add qword [input_index], 1
+            ;
+                call       read
             "}
             .to_string(),
             Token::Write => indoc! {"
-                mov rax, 1
-                mov rdi, 1
-                mov rsi, tape
-                add rsi, rbx
-                mov rdx, 1
-                syscall
+            ;
+                call       write
             "}
             .to_string(),
             Token::Loop(j) => formatdoc! {"
-                movzx rcx, byte [tape + rbx]
-                cmp rcx, 0
-                jne L{j}
+            ;
+                movzx      r11, byte [tape + r12]
+                cmp        r11, 0
+                jne        L{j}
             L{i}:
             "},
             Token::Break(j) => formatdoc! {"
             L{i}:
-                movzx rcx, byte [tape + rbx]
-                cmp rcx, 0
-                jne L{j}
+                movzx      r11, byte [tape + r12]
+                cmp        r11, 0
+                je         L{j}
             "},
             Token::Comment => "".to_string(),
         });
     }
 
     asm.push_str(indoc! {"
-        mov rax, 60
-        mov rdi, 0
-        syscall
+        exit:
+            mov        rax, 60
+            mov        rdi, 0
+            syscall
     "});
 
     asm
