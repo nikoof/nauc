@@ -80,7 +80,6 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn run(mut self) -> Result<(), InterpreterError> {
-        let mut max_index = self.index;
         while self.pc < self.program.len() {
             match self.program[self.pc] {
                 Token::Right(count) => {
@@ -138,10 +137,7 @@ impl Interpreter {
                 Token::Comment => (),
             }
             self.pc += 1;
-            max_index = max_index.max(self.index);
         }
-
-        println!("{}", max_index);
 
         Ok(())
     }
